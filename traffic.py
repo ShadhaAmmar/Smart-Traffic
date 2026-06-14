@@ -19,9 +19,7 @@ warnings.filterwarnings("ignore")
 
 os.makedirs("screenshots", exist_ok=True)
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
+# config
 FONT        = cv2.FONT_HERSHEY_DUPLEX
 FONT_MONO   = cv2.FONT_HERSHEY_SIMPLEX
 OUTPUT_PATH = "output_traffic_ai.mp4"
@@ -31,21 +29,21 @@ VEHICLE_CLS = {"car","truck","bus","motorcycle","bicycle"}
 PERSON_CLS  = {"person"}
 TRACKED_CLS = VEHICLE_CLS | PERSON_CLS
 
-# Speed estimation: pixels-per-frame × scale factor
+# speed estimation: pixels per frame × scale factor
 SPEED_SCALE = 0.12   # tunable km/h per px/frame
 
-# Congestion thresholds (vehicles in ROI)
+# congestion thresholds (vehicles in roi)
 CONGESTION_LOW    = 4
 CONGESTION_MED    = 8
 CONGESTION_HIGH   = 14
 
-# Counting lines (y-position as fraction of frame height)
+# counting lines (y position as fraction of frame height)
 COUNT_LINE_Y = 0.55
 
-# Lane boundaries (x as fraction of frame width)
+# lane boundaries (x as fraction of frame width)
 LANE_BOUNDS = [0.0, 0.25, 0.50, 0.75, 1.0]
 
-# Colors (BGR)
+# colors (bgr)
 C_NEON   = (  0, 255, 180)
 C_BLUE   = (220, 120,  30)
 C_GREEN  = ( 50, 220,  50)
@@ -71,17 +69,13 @@ VEH_COLORS = {
 
 def vcol(name): return VEH_COLORS.get(name, C_GRAY)
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  DEVICE
-# ─────────────────────────────────────────────────────────────────────────────
+# device
 def get_device():
     if torch.cuda.is_available():
         return "cuda", torch.cuda.get_device_name(0)
     return "cpu", "CPU"
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  KALMAN VEHICLE TRACKER
-# ─────────────────────────────────────────────────────────────────────────────
+# kalman vehicle tracker
 def _iou(a, b):
     ax1,ay1,ax2,ay2=a; bx1,by1,bx2,by2=b
     ix1=max(ax1,bx1); iy1=max(ay1,by1)
@@ -175,9 +169,7 @@ class TrafficTracker:
         self.tracks=[t for t in self.tracks if t.miss<=10]
         return [t for t in self.tracks if t.hits>=2]
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  VEHICLE COUNTER
-# ─────────────────────────────────────────────────────────────────────────────
+# vehicle counter
 class VehicleCounter:
     def __init__(self):
         self.total   = 0
@@ -194,9 +186,7 @@ class VehicleCounter:
                 self.by_cls[t.cls_name]+=1
                 self.counted.add(t.tid)
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  CONGESTION SCORER
-# ─────────────────────────────────────────────────────────────────────────────
+# congestion scorer
 class CongestionScorer:
     def __init__(self):
         self.history=collections.deque(maxlen=60)
@@ -211,9 +201,7 @@ class CongestionScorer:
         else:                     level="FREE FLOW"
         return score, level
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  TRAFFIC HEATMAP
-# ─────────────────────────────────────────────────────────────────────────────
+# traffic heatmap
 class TrafficHeatmap:
     def __init__(self,H,W):
         self.map=np.zeros((H,W),np.float32)
@@ -237,9 +225,7 @@ class TrafficHeatmap:
         out[mask]=(out[mask]*(1-alpha)+h_col.astype(np.float32)[mask]*alpha)
         return out.astype(np.uint8)
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  LANE ANALYTICS
-# ─────────────────────────────────────────────────────────────────────────────
+# lane analytics
 def compute_lane_stats(tracks, frame_w):
     n_lanes=len(LANE_BOUNDS)-1
     lane_counts=[0]*n_lanes
@@ -252,9 +238,7 @@ def compute_lane_stats(tracks, frame_w):
     avg_speeds=[np.mean(s) if s else 0.0 for s in lane_speeds]
     return lane_counts, avg_speeds
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  BEV MINI-MAP
-# ─────────────────────────────────────────────────────────────────────────────
+# bev mini map
 class BEVMap:
     def __init__(self, w=240, h=280):
         self.W=w; self.H=h
@@ -262,18 +246,18 @@ class BEVMap:
     def render(self, tracks, frame_w, frame_h, congestion_score):
         W,H=self.W,self.H
         canvas=np.zeros((H,W,3),np.uint8)
-        # Road surface
+        # road surface
         cv2.rectangle(canvas,(W//4,0),(W*3//4,H),(20,20,20),-1)
-        # Lane lines
+        # lane lines
         n_lanes=len(LANE_BOUNDS)-1
         for b in LANE_BOUNDS[1:-1]:
             lx=int(b*W)
             for y in range(0,H,16):
                 cv2.line(canvas,(lx,y),(lx,min(y+10,H)),(60,60,60),1)
-        # Grid
+        # grid
         for d in range(0,H,40):
             cv2.line(canvas,(0,d),(W,d),(25,30,25),1)
-        # Vehicles
+        # vehicles
         for t in tracks:
             if t.cls_name not in VEHICLE_CLS: continue
             cx,cy=t.centre()
@@ -283,7 +267,7 @@ class BEVMap:
             cv2.rectangle(canvas,(bx-5,by-8),(bx+5,by+8),col,-1)
             cv2.rectangle(canvas,(bx-5,by-8),(bx+5,by+8),(255,255,255),1)
             _t2(canvas,str(t.tid),(bx+6,by+4),0.26,col)
-        # Congestion bar
+        # congestion bar
         bar_w=int(congestion_score/100*(W-20))
         col=(C_RED if congestion_score>70 else
              C_ORANGE if congestion_score>40 else C_GREEN)
@@ -298,9 +282,7 @@ def _t2(img,text,pos,scale,color,font=FONT_MONO):
     x,y=int(pos[0]),int(pos[1])
     cv2.putText(img,text,(x,y),font,scale,color,1,cv2.LINE_AA)
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  HUD DRAWING
-# ─────────────────────────────────────────────────────────────────────────────
+# hud drawing
 def _t(img,text,pos,scale,color,thickness=1,font=FONT_MONO):
     x,y=int(pos[0]),int(pos[1])
     cv2.putText(img,text,(x+1,y+1),font,scale,(0,0,0),thickness+1,cv2.LINE_AA)
@@ -311,7 +293,7 @@ def draw_vehicle_box(frame, track):
     box=track.get_box(); x1,y1,x2,y2=[int(v) for v in box]
     col=vcol(track.cls_name)
     w=x2-x1; h=y2-y1
-    # Corner box
+    # corner box
     L=min(16,w//3,h//3)
     for (cx2,cy2),(dx,dy) in zip(
         [(x1,y1),(x2,y1),(x2,y2),(x1,y2)],
@@ -320,7 +302,7 @@ def draw_vehicle_box(frame, track):
         cv2.line(frame,(cx2,cy2),(cx2+dx*L,cy2),col,2)
         cv2.line(frame,(cx2,cy2),(cx2,cy2+dy*L),col,2)
 
-    # Info plate
+    # info plate
     spd=f"{track.speed_kmh:.0f}km/h"
     lbl=f"#{track.tid} {track.cls_name}"
     pw=max(w,130); ph=38
@@ -333,7 +315,7 @@ def draw_vehicle_box(frame, track):
     _t(frame,spd,(px+4,py+28),0.34,
        C_RED if track.speed_kmh>80 else C_WHITE)
 
-    # Speed trail
+    # speed trail
     if len(track.pos_hist)>2:
         pts=list(track.pos_hist)
         for i in range(1,len(pts)):
@@ -346,7 +328,7 @@ def draw_vehicle_box(frame, track):
 def draw_count_line(frame, line_y, total_count):
     H,W=frame.shape[:2]
     ly=int(line_y*H)
-    # Dashed counting line
+    # dashed counting line
     for x in range(0,W,20):
         cv2.line(frame,(x,ly),(min(x+12,W),ly),(0,220,220),2)
     _t(frame,f"COUNT LINE  [{total_count} vehicles passed]",
@@ -369,7 +351,7 @@ def draw_lane_panel(frame, lane_counts, lane_speeds, frame_w):
              C_ORANGE if lane_counts[i]>=CONGESTION_MED//n else C_GREEN)
         _t(frame,f"Lane {i+1}: {lane_counts[i]} veh  {lane_speeds[i]:.0f}km/h",
            (px+6,ey+14),0.36,col)
-        # Mini bar
+        # mini bar
         bar_w=max(0,min(int(lane_counts[i]/4*(pw-12)),pw-12))
         cv2.rectangle(frame,(px+6,ey+16),(px+6+bar_w,ey+22),col,-1)
         cv2.rectangle(frame,(px+6,ey+16),(px+pw-6,ey+22),(50,50,50),1)
@@ -389,7 +371,7 @@ def draw_congestion_panel(frame, score, level, n_vehicles, avg_speed):
     _t(frame,f"Score    : {score:3d}/100",(px+6,py+34),0.36,C_WHITE)
     _t(frame,f"Vehicles : {n_vehicles:4d}",(px+6,py+50),0.36,C_WHITE)
     _t(frame,f"Avg speed: {avg_speed:.0f} km/h",(px+6,py+66),0.36,C_WHITE)
-    # Score bar
+    # score bar
     bar_w=int(score/100*(pw-12))
     cv2.rectangle(frame,(px+6,py+74),(px+6+bar_w,py+82),col,-1)
     cv2.rectangle(frame,(px+6,py+74),(px+pw-6,py+82),(50,50,50),1)
@@ -423,7 +405,7 @@ def draw_top_hud(frame,fps,frame_idx,total,inf_ms,device_lbl,congestion_lbl,ts):
     ov=frame.copy()
     cv2.rectangle(ov,(0,0),(W,bh),C_DARK,-1)
     cv2.addWeighted(ov,0.82,frame,0.18,0,frame)
-    # Cyberpunk gradient accent
+    # cyberpunk gradient accent
     for px2 in range(W):
         t2=px2/W
         r2=int(0+t2*30); g2=int(200+t2*55); b2=int(255-t2*100)
@@ -479,9 +461,7 @@ def vignette(frame, strength=0.28):
     v=np.clip(1.0-d*strength,0.58,1.0).astype(np.float32)
     return np.clip(frame.astype(np.float32)*v[:,:,np.newaxis],0,255).astype(np.uint8)
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  MAIN
-# ─────────────────────────────────────────────────────────────────────────────
+# main
 def main():
     print("\n"+"="*66)
     print("  SMART TRAFFIC & VEHICLE ANALYTICS  |  Production v1.0")
@@ -544,7 +524,7 @@ def main():
         frame=cv2.resize(raw,(W,H)) if scale<1.0 else raw.copy()
         t0=time.perf_counter()
 
-        # YOLO
+        # yolo
         results=model(frame,verbose=False,imgsz=640,conf=0.30,
                       **({"half":True} if device=="cuda" else {}))[0]
         inf_ms=(time.perf_counter()-t0)*1000
@@ -557,30 +537,30 @@ def main():
                 b=[float(v) for v in box.xyxy[0].tolist()]
                 dets.append((b,cn,float(box.conf[0])))
 
-        # Track & count
+        # track & count
         tracks=tracker.update([(d[0],d[1]) for d in dets],fps_in)
         counter.update(tracks,COUNT_LINE_Y,H)
 
-        # Analytics
+        # analytics
         n_veh=sum(1 for t in tracks if t.cls_name in VEHICLE_CLS)
         avg_spd=(np.mean([t.speed_kmh for t in tracks if t.cls_name in VEHICLE_CLS])
                  if any(t.cls_name in VEHICLE_CLS for t in tracks) else 0.0)
         cong_s, cong_lv=cong_score.update(n_veh)
         lane_counts,lane_speeds=compute_lane_stats(tracks,W)
 
-        # Heatmap
+        # heatmap
         heatmap.update(tracks,H,W)
         frame=heatmap.render(frame,alpha=0.25)
 
-        # BEV
+        # bev
         bev_img=bev.render(tracks,W,H,cong_s)
 
-        # Draw
+        # draw
         draw_count_line(frame,COUNT_LINE_Y,counter.total)
         for t in tracks: draw_vehicle_box(frame,t)
         embed_bev(frame,bev_img)
 
-        # HUD
+        # hud
         ts=datetime.datetime.now().strftime("%H:%M:%S")
         t_now=time.time(); dt=max(t_now-t_prev,1e-6); t_prev=t_now
         fps_smooth=0.88*fps_smooth+0.12/dt

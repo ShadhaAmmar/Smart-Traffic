@@ -1,6 +1,6 @@
-// Smart Traffic System
-// Real-time traffic intelligence and smart city monitoring.
-// Usage: ./SmartTraffic input.mp4 or ./SmartTraffic 0 (webcam)
+// smart traffic system
+// real time traffic intelligence and smart city monitoring.
+// usage: ./smarttraffic input.mp4 or ./smarttraffic 0 (webcam)
 
 #include <iostream>
 #include <string>
@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     }
     std::string source = argv[1];
     std::cout << "[INFO] Source: " << source << std::endl;
-    // TODO: Implement core vehicle tracking logic
+    // todo: implement core vehicle tracking logic
     std::cout << "[DONE]" << std::endl;
     return 0;
 }
