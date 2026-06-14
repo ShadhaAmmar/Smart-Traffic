@@ -1,0 +1,13 @@
+# Ignore PyTorch model weights
+*.pt
+
+# Ignore generated output video files
+*.mp4
+
+# Ignore screenshots directory
+screenshots/
+
+# Ignore Python caches
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
