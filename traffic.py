@@ -1,45 +1,10 @@
 import sys
-import subprocess
 import os
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  AUTO-INSTALL
-# ─────────────────────────────────────────────────────────────────────────────
-_PACKAGES = [
-    ("ultralytics",  "ultralytics"),
-    ("opencv-python","cv2"),
-    ("torch",        "torch"),
-    ("torchvision",  "torchvision"),
-    ("numpy",        "numpy"),
-    ("pillow",       "PIL"),
-    ("scipy",        "scipy"),
-    ("filterpy",     "filterpy"),
-    ("tqdm",         "tqdm"),
-]
-
-print("\n" + "=" * 66)
-print("  SMART TRAFFIC & VEHICLE ANALYTICS  |  Dependency Check")
-print("=" * 66)
-for pkg, imp in _PACKAGES:
-    try:
-        __import__(imp)
-        print(f"  [OK]       {pkg}")
-    except ImportError:
-        print(f"  [INSTALL]  {pkg} ...")
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", pkg, "-q",
-             "--break-system-packages"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        print(f"  [DONE]     {pkg}")
-print("=" * 66 + "\n")
-
 import time
 import datetime
 import math
 import warnings
 import collections
-warnings.filterwarnings("ignore")
 
 import cv2
 import numpy as np
@@ -49,6 +14,8 @@ from scipy.optimize import linear_sum_assignment
 from ultralytics import YOLO
 from filterpy.kalman import KalmanFilter
 from tqdm import tqdm
+
+warnings.filterwarnings("ignore")
 
 os.makedirs("screenshots", exist_ok=True)
 
