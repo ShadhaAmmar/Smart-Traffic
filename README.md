@@ -23,3 +23,4 @@ This project is a production-grade AI traffic intelligence and smart city monito
 - [Vehicle detection](https://en.wikipedia.org/wiki/Vehicle_detection)
 
 ## Developer
+Shadha AMMAR
