@@ -463,10 +463,8 @@ def vignette(frame, strength=0.28):
 
 # main
 def main():
-    print("\n"+"="*66)
     print("  SMART TRAFFIC & VEHICLE ANALYTICS  |  Production v1.0")
     print("  YOLOv8 + DeepSORT + Speed + Lane Analytics + Congestion AI")
-    print("="*66)
 
     if len(sys.argv)<2:
         print("\n  Usage:")
@@ -588,7 +586,7 @@ def main():
     bar.close(); cap.release(); writer.release()
     cv2.destroyAllWindows()
     print(f"\n  [DONE]  {frame_idx} frames  ->  {OUTPUT_PATH}")
-    print("="*66+"\n")
+    print()
 
 if __name__=="__main__":
     main()

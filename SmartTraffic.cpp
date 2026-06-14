@@ -6,9 +6,7 @@
 #include <string>
 
 int main(int argc, char* argv[]) {
-    std::cout << "===============================" << std::endl;
     std::cout << "  SMART TRAFFIC SYSTEM  |  Production v1.0" << std::endl;
-    std::cout << "===============================" << std::endl;
     if (argc < 2) {
         std::cout << "\n  Usage:" << std::endl;
         std::cout << "    ./SmartTraffic input.mp4" << std::endl;
